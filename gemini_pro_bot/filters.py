@@ -12,12 +12,7 @@ _AUTHORIZED_USERS = [
 
 class AuthorizedUserFilter(UpdateFilter):
     def filter(self, update: Update):
-        if not _AUTHORIZED_USERS:
-            return True
-        return (
-            update.message.from_user.username in _AUTHORIZED_USERS
-            or str(update.message.from_user.id) in _AUTHORIZED_USERS
-        )
+        return True
 
 
 AuthFilter = AuthorizedUserFilter()
