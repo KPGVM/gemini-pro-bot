@@ -20,10 +20,10 @@ def new_chat(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def start(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /start is issued."""
+    """Надіслати повідомлення при виконанні команди /start."""
     user = update.effective_user
     await update.message.reply_html(
-        f"Hi {user.mention_html()}!\n\nStart sending messages with me to generate a response.\n\nSend /new to start a new chat session.",
+        f"Привіт {user.mention_html()}!\n\nПочніть надсилати мені повідомлення, щоб отримати відповідь.\n\nНапишіть /new, щоб розпочати новий чат.",
         # reply_markup=ForceReply(selective=True),
     )
 
@@ -31,14 +31,14 @@ async def start(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
 async def help_command(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
     help_text = """
-Basic commands:
-/start - Start the bot
-/help - Get help. Shows this message
+Основні команди:
+/start - Запустити бота
+/help - Отримати допомогу. Показує таке повідомлення
 
-Chat commands:
-/new - Start a new chat session (model will forget previously generated messages)
+Команди чату:
+/new - Почати новий сеанс чату (модель забуде попередні повідомлення)
 
-Send a message to the bot to generate a response.
+Надіслати повідомлення боту для отримання відповіді.
 """
     await update.message.reply_text(help_text)
 
@@ -46,26 +46,26 @@ Send a message to the bot to generate a response.
 async def newchat_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Start a new chat session."""
     init_msg = await update.message.reply_text(
-        text="Starting new chat session...",
+        text="Початок нового сеансу чату...",
         reply_to_message_id=update.message.message_id,
     )
     new_chat(context)
-    await init_msg.edit_text("New chat session started.")
+    await init_msg.edit_text("Розпочався новий сеанс чату.")
 
 
 # Define the function that will handle incoming messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles incoming text messages from users.
+    """Обробляє вхідні текстові повідомлення від користувачів.
 
-    Checks if a chat session exists for the user, initializes a new session if not.
-    Sends the user's message to the chat session to generate a response.
-    Streams the response back to the user, handling any errors.
+    Перевіряє, чи існує сеанс чату для користувача, ініціалізує новий сеанс, якщо ні.
+    Надсилає повідомлення користувача до сеансу чату для отримання відповіді.
+    Відправляє відповідь назад користувачеві, обробляючи будь-які помилки.
     """
     if context.chat_data.get("chat") is None:
         new_chat(context)
     text = update.message.text
     init_msg = await update.message.reply_text(
-        text="Generating...", reply_to_message_id=update.message.message_id
+        text="Генерування відповіді...", reply_to_message_id=update.message.message_id
     )
     await update.message.chat.send_action(ChatAction.TYPING)
     # Generate a response using the text-generation pipeline
@@ -76,15 +76,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             text, stream=True
         )  # Generate a response
     except StopCandidateException as sce:
-        print("Prompt: ", text, " was stopped. User: ", update.message.from_user)
+        print("Промт: ", text, " був зупинений. Користувач:", update.message.from_user)
         print(sce)
-        await init_msg.edit_text("The model unexpectedly stopped generating.")
+        await init_msg.edit_text("Модель несподівано перестала генерувати.")
         chat.rewind()  # Rewind the chat session to prevent the bot from getting stuck
         return
     except BlockedPromptException as bpe:
-        print("Prompt: ", text, " was blocked. User: ", update.message.from_user)
+        print("Промт: ", text, " було заблоковано. Користувач:", update.message.from_user)
         print(bpe)
-        await init_msg.edit_text("Blocked due to safety concerns.")
+        await init_msg.edit_text("Заблоковано з міркувань безпеки.")
         if response:
             # Resolve the response to prevent the chat session from getting stuck
             await response.resolve()
@@ -102,7 +102,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     disable_web_page_preview=True,
                 )
         except StopCandidateException as sce:
-            await init_msg.edit_text("The model unexpectedly stopped generating.")
+            await init_msg.edit_text("Модель несподівано перестала генерувати.")
             chat.rewind()  # Rewind the chat session to prevent the bot from getting stuck
             continue
         except BadRequest:
@@ -114,7 +114,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
         except IndexError:
             await init_msg.reply_text(
-                "Some index error occurred. This response is not supported."
+                "Виникла помилка індексації. Ця відповідь не підтримується."
             )
             await response.resolve()
             continue
@@ -134,9 +134,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle incoming images with captions and generate a response."""
+    """Обробляйте вхідні зображення з підписами та генеруйте відповідь."""
     init_msg = await update.message.reply_text(
-        text="Generating...", reply_to_message_id=update.message.message_id
+        text="Генерування відповіді...", reply_to_message_id=update.message.message_id
     )
     images = update.message.photo
     unique_images: dict = {}
@@ -153,7 +153,7 @@ async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message.caption:
         prompt = update.message.caption
     else:
-        prompt = "Analyse this image and generate response"
+        prompt = "Проаналізуй це зображення та згенеруй відповідь"
     response = await img_model.generate_content_async([prompt, a_img], stream=True)
     full_plain_message = ""
     async for chunk in response:
@@ -167,17 +167,17 @@ async def handle_image(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
                     disable_web_page_preview=True,
                 )
         except StopCandidateException:
-            await init_msg.edit_text("The model unexpectedly stopped generating.")
+            await init_msg.edit_text("Модель несподівано перестала генерувати.")
         except BadRequest:
             await response.resolve()
             continue
         except NetworkError:
             raise NetworkError(
-                "Looks like you're network is down. Please try again later."
+                "Схоже, ваша мережа не працює. Спробуйте пізніше."
             )
         except IndexError:
             await init_msg.reply_text(
-                "Some index error occurred. This response is not supported."
+                "Виникла помилка індексації. Ця відповідь не підтримується."
             )
             await response.resolve()
             continue
